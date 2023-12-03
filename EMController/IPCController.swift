@@ -45,14 +45,13 @@ class IPCController {
     private var connection: NWConnection? = nil
     
     init() {
-        print("Connection: \(self.connection == nil)")
         self.connection = NWConnection(host: UDP_HOST, port: UDP_PORT, using: .udp)
         self.connection?.start(queue: .global())
     }
 
     func sendToESP32(_ frequency: Double, emid: UInt32 = 1) {
-        if self.connection?.state != NWConnection.State.ready {
-            print("Non-send-ready connection state: \(self.connection!.state)")
+        if self.connection == nil || self.connection?.state != NWConnection.State.ready {
+            print("Dropping msg, UDP connection not ready, state: \(self.connection!.state)")
             return
         }
         
@@ -60,7 +59,7 @@ class IPCController {
             content: UdpFreqMsg(frequency, emid, IPCController.fCount).toData(),
             completion: NWConnection.SendCompletion.contentProcessed({ NWError in
                 if (NWError == nil) { IPCController.fCount += 1 }
-                else { print("UDP send error: \(NWError!)") }
+                else { print("UDP send: \(frequency) Hz, error: \(NWError!)") }
             })
         )
     }

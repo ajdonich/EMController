@@ -19,7 +19,7 @@ struct ContentView: View {
     var body: some View {
         VStack {
             ZStack {
-                CircularSlider(vbind: $frequency, in: (lo: 1.5, hi: 5000.0))
+                CircularSlider(value: $frequency, in: (lo: 1.5, hi: 5000.0))
                     .padding([.horizontal, .vertical])
                     .onChange(of: frequency) {
                         ipcctrl.sendToESP32(frequency)
@@ -33,9 +33,13 @@ struct ContentView: View {
             Divider()
                 .frame(height: 5.0)
                 .overlay(.blue)
-                
+            
             Rectangle()
                 .fill(.black)
+            
+            Text(ipcctrl.description)
+                .font(Font.custom("CourierNewPSMT", size: 20))
+                .foregroundColor(ipcctrl.status ? .green : .red)
         }
         .preferredColorScheme(.dark)
     }

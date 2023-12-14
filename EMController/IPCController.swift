@@ -8,7 +8,7 @@
 import Foundation
 import Network
 
-struct UdpFreqMsg : CustomStringConvertible {
+struct FreqUpdateMsg : CustomStringConvertible {
     var freq: Double
     var emid: UInt32
     var fcnt: UInt32
@@ -39,16 +39,18 @@ struct UdpFreqMsg : CustomStringConvertible {
 }
 
 class IPCController : CustomStringConvertible {
-    var UDP_HOST: NWEndpoint.Host = "192.168.0.16"
-    var UDP_PORT: NWEndpoint.Port = 4645
+    var ESP_HOST: NWEndpoint.Host = "192.168.0.16"
+    var TCP_PORT: NWEndpoint.Port = 4647
     var status: Bool = true
     
     private static var fCount: UInt32 = 1
     private var connection: NWConnection? = nil
     
     init() {
-        self.connection = NWConnection(host: UDP_HOST, port: UDP_PORT, using: .udp)
+        self.connection = NWConnection(host: ESP_HOST, port: TCP_PORT, using: .tcp)
+        self.connection?.stateUpdateHandler = self.stateHandler(state:)
         self.connection?.start(queue: .global())
+        self.awaitReceive()
     }
 
     var description: String {
@@ -57,18 +59,65 @@ class IPCController : CustomStringConvertible {
         return "\(parts[0])://\(self.connection!.endpoint.debugDescription)"
     }
     
-    func sendToESP32(_ frequency: Double, emid: UInt32 = 1) {
-        if self.connection == nil || self.connection?.state != NWConnection.State.ready {
-            print("Dropping msg, UDP connection not ready, state: \(self.connection!.state)")
-            status = false
-            return
+    func stop() {
+        self.connection?.cancel()
+        NSLog("did stop")
+    }
+    
+    private func stateHandler(state: NWConnection.State) {
+        switch state {
+        case .setup:
+            break
+        case .waiting(let error):
+            NSLog("is waiting: %@", "\(error)")
+        case .preparing:
+            break
+        case .ready:
+            break
+        case .failed(let error):
+            NSLog("did fail, error: %@", "\(error)")
+            self.stop()
+        case .cancelled:
+            NSLog("was cancelled")
+            self.stop()
+        @unknown default:
+            break
         }
+    }
+
+    private func awaitReceive() {
+        self.connection?.receive(
+            minimumIncompleteLength: 1, maximumLength: 65536,
+            completion: { content, contentContext, isComplete, error in
+                if let data = content, !data.isEmpty {
+                    NSLog("did receive, data: %@", data as NSData)
+                }
+                if let error = error {
+                    NSLog("did receive, error: %@", "\(error)")
+                    self.stop()
+                    return
+                }
+                if isComplete {
+                    NSLog("did receive, EOF")
+                    self.stop()
+                    return
+                }
+                self.awaitReceive()
+            })
+    }
+    
+    func sendToESP32(_ frequency: Double, emid: UInt32 = 1) {
+//        if self.connection == nil || self.connection?.state != NWConnection.State.ready {
+//            print("Dropping msg, ESP connection not ready, state: \(self.connection!.state)")
+//            status = false
+//            return
+//        }
         
         self.connection?.send(
-            content: UdpFreqMsg(frequency, emid, IPCController.fCount).toData(),
+            content: FreqUpdateMsg(frequency, emid, IPCController.fCount).toData(),
             completion: NWConnection.SendCompletion.contentProcessed({ NWError in
                 if (NWError == nil) { IPCController.fCount += 1; self.status = true }
-                else { print("UDP send: \(frequency) Hz, error: \(NWError!)"); self.status = false }
+                else { print("Network send: \(frequency) Hz, error: \(NWError!)"); self.status = false }
             })
         )
     }

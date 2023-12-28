@@ -53,13 +53,13 @@ struct CircularSlider: View {
     @State private var angle: Double
     private var value: Binding<Double>
     private var range: (lo: Double, hi: Double)
-
+    
     init(value: Binding<Double>, in range: (lo: Double, hi: Double)) {
         self.angle = (value.wrappedValue - range.lo) * TAU / (range.hi - range.lo)
         self.value = value
         self.range = range
     }
-                        
+    
     private enum Quadrant { case Q1, Q2, Q3, Q4 }
     private func getQuad(at theta: Double) -> Quadrant{
         switch theta {
@@ -114,7 +114,6 @@ struct CircularSlider: View {
                             // Assign slider bound value (e.g. frequency) based on angle and range
                             value.wrappedValue = (angle * (range.hi - range.lo) / TAU) + range.lo
                         })
-//                        .onEnded { _ in self.isDragging = false }
                     )
             }
         })

@@ -7,6 +7,8 @@
 
 import Foundation
 
+// This class performs the same UDP IPC exchange with the ESP32 as
+// IPCController does, but using the lower level network system call
 
 class BSDController : CustomStringConvertible {
     private let ESP_HOST: String = "192.168.0.16"
@@ -42,7 +44,7 @@ class BSDController : CustomStringConvertible {
             NSLog("sendto ERRNO %d: %s\n", "\(errno), \(desr)")
         }
     }
-
+    
     func receiveEMDriverMsg() async {
         let msglen = MemoryLayout<EMDriverMsg.DataPacket>.size
         let buffer = UnsafeMutableRawPointer.allocate(byteCount: msglen, alignment: 2)
@@ -53,8 +55,7 @@ class BSDController : CustomStringConvertible {
             NSLog("sendto ERRNO %d: %s\n", "\(errno), \(desr)")
             return
         }
-        
-        let msg = EMDriverMsg()
+        let msg = EMDriverMsg(buffer, nbytes)
         NSLog("%@\n", msg.description)
         
         await receiveEMDriverMsg()
@@ -108,68 +109,5 @@ class BSDController : CustomStringConvertible {
 //            close(clientSockFd);
 //            self.clientSockFd = -1
 //        }
-    }
-}
-
-struct EMDriverMsg : CustomStringConvertible {
-    struct DataPacket {
-        let ackbit: Bool
-        let msgid: UInt16
-        let freq_a, freq_b, freq_c: UInt32 // Millihertz
-
-        init(_ ackbit: Bool, _ msgid: UInt16 = 0, _ freq_a: UInt32,
-             _ freq_b: UInt32, _ freq_c: UInt32) {
-            self.ackbit = ackbit; self.msgid = msgid
-            self.freq_a = freq_a; self.freq_b = freq_b
-            self.freq_c = freq_c;
-        }
-        
-        init(_ data: Data) {
-            self.freq_a = 0; self.freq_b = 0; self.freq_c = 0
-            self.ackbit = false; self.msgid = 0
-            withUnsafeMutablePointer(to: &self) { ptr in
-                data.copyBytes(
-                    to: UnsafeMutableBufferPointer(start: ptr, count: 1),
-                    from: 0..<MemoryLayout<DataPacket>.size)
-            }
-        }
-
-        init(_ buffer: UnsafeMutableRawPointer, _ msglen: Int) {
-            self.init(Data(bytesNoCopy: buffer, count: msglen, deallocator: .none))
-        }
-
-        func toData() -> Data {
-            var data = Data(capacity: MemoryLayout<DataPacket>.size)
-            withUnsafePointer(to: self) { ptr in
-                data.append(UnsafeBufferPointer(start: ptr, count: 1))
-            }
-            return data
-        }
-        
-        var description: String {
-            return "(\(self.ackbit), \(self.freq_a), \(self.freq_b), \(self.freq_c), \(self.msgid))"
-        }
-    }
-    
-    private static var _msgcounter: UInt32 = 0
-    let datapacket: DataPacket
-
-    init(mHz_a freq_a: UInt32 = 0, mHz_b freq_b: UInt32 = 0,
-         mHz_c freq_c: UInt32 = 0, ACK ackbit: Bool = false) {
-        let msgid = UInt16(EMDriverMsg._msgcounter + 1)
-        EMDriverMsg._msgcounter = (EMDriverMsg._msgcounter + 1) % 65535
-        self.datapacket = DataPacket(ackbit, msgid, freq_a, freq_b, freq_c)
-    }
-
-    init(_ data: Data) {
-        self.datapacket = DataPacket(data)
-    }
-
-    func toData() -> Data {
-        return self.datapacket.toData()
-    }
-    
-    var description: String {
-        return self.datapacket.description
     }
 }

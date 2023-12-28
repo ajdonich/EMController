@@ -14,6 +14,7 @@
 		5247EB062B153BD7002254DE /* EMControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5247EB052B153BD7002254DE /* EMControllerTests.swift */; };
 		5247EB102B153BD7002254DE /* EMControllerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5247EB0F2B153BD7002254DE /* EMControllerUITests.swift */; };
 		5247EB122B153BD7002254DE /* EMControllerUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5247EB112B153BD7002254DE /* EMControllerUITestsLaunchTests.swift */; };
+		52488B2D2B3DF6BE004DE878 /* EMDriverMsg.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52488B2C2B3DF6BE004DE878 /* EMDriverMsg.swift */; };
 		527EA92B2B191380000FD214 /* IPCController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527EA92A2B191380000FD214 /* IPCController.swift */; };
 		52D157922B3B925900865D1E /* BSDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D157912B3B925900865D1E /* BSDController.swift */; };
 		52DBBBC42B1D40B800B71264 /* CircularSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52DBBBC32B1D40B800B71264 /* CircularSlider.swift */; };
@@ -47,6 +48,7 @@
 		5247EB0B2B153BD7002254DE /* EMControllerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EMControllerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5247EB0F2B153BD7002254DE /* EMControllerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EMControllerUITests.swift; sourceTree = "<group>"; };
 		5247EB112B153BD7002254DE /* EMControllerUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EMControllerUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		52488B2C2B3DF6BE004DE878 /* EMDriverMsg.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EMDriverMsg.swift; sourceTree = "<group>"; };
 		527EA92A2B191380000FD214 /* IPCController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPCController.swift; sourceTree = "<group>"; };
 		52D157912B3B925900865D1E /* BSDController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BSDController.swift; sourceTree = "<group>"; };
 		52DBBBC32B1D40B800B71264 /* CircularSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularSlider.swift; sourceTree = "<group>"; };
@@ -103,10 +105,11 @@
 				5247EAF42B153BD6002254DE /* EMControllerApp.swift */,
 				5247EAF62B153BD6002254DE /* ContentView.swift */,
 				52DBBBC32B1D40B800B71264 /* CircularSlider.swift */,
+				52D157912B3B925900865D1E /* BSDController.swift */,
 				527EA92A2B191380000FD214 /* IPCController.swift */,
+				52488B2C2B3DF6BE004DE878 /* EMDriverMsg.swift */,
 				5247EAF82B153BD7002254DE /* Assets.xcassets */,
 				5247EAFA2B153BD7002254DE /* Preview Content */,
-				52D157912B3B925900865D1E /* BSDController.swift */,
 			);
 			path = EMController;
 			sourceTree = "<group>";
@@ -271,6 +274,7 @@
 				5247EAF52B153BD6002254DE /* EMControllerApp.swift in Sources */,
 				52D157922B3B925900865D1E /* BSDController.swift in Sources */,
 				52DBBBC42B1D40B800B71264 /* CircularSlider.swift in Sources */,
+				52488B2D2B3DF6BE004DE878 /* EMDriverMsg.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

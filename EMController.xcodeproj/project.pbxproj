@@ -15,6 +15,7 @@
 		5247EB102B153BD7002254DE /* EMControllerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5247EB0F2B153BD7002254DE /* EMControllerUITests.swift */; };
 		5247EB122B153BD7002254DE /* EMControllerUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5247EB112B153BD7002254DE /* EMControllerUITestsLaunchTests.swift */; };
 		527EA92B2B191380000FD214 /* IPCController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527EA92A2B191380000FD214 /* IPCController.swift */; };
+		52D157922B3B925900865D1E /* BSDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D157912B3B925900865D1E /* BSDController.swift */; };
 		52DBBBC42B1D40B800B71264 /* CircularSlider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52DBBBC32B1D40B800B71264 /* CircularSlider.swift */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +48,7 @@
 		5247EB0F2B153BD7002254DE /* EMControllerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EMControllerUITests.swift; sourceTree = "<group>"; };
 		5247EB112B153BD7002254DE /* EMControllerUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EMControllerUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		527EA92A2B191380000FD214 /* IPCController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPCController.swift; sourceTree = "<group>"; };
+		52D157912B3B925900865D1E /* BSDController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BSDController.swift; sourceTree = "<group>"; };
 		52DBBBC32B1D40B800B71264 /* CircularSlider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularSlider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -104,6 +106,7 @@
 				527EA92A2B191380000FD214 /* IPCController.swift */,
 				5247EAF82B153BD7002254DE /* Assets.xcassets */,
 				5247EAFA2B153BD7002254DE /* Preview Content */,
+				52D157912B3B925900865D1E /* BSDController.swift */,
 			);
 			path = EMController;
 			sourceTree = "<group>";
@@ -266,6 +269,7 @@
 				527EA92B2B191380000FD214 /* IPCController.swift in Sources */,
 				5247EAF72B153BD6002254DE /* ContentView.swift in Sources */,
 				5247EAF52B153BD6002254DE /* EMControllerApp.swift in Sources */,
+				52D157922B3B925900865D1E /* BSDController.swift in Sources */,
 				52DBBBC42B1D40B800B71264 /* CircularSlider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -438,6 +442,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -467,6 +472,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

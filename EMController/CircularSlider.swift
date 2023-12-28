@@ -114,6 +114,7 @@ struct CircularSlider: View {
                             // Assign slider bound value (e.g. frequency) based on angle and range
                             value.wrappedValue = (angle * (range.hi - range.lo) / TAU) + range.lo
                         })
+//                        .onEnded { _ in self.isDragging = false }
                     )
             }
         })

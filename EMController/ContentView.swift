@@ -8,45 +8,51 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var frequency: Double = 440.0
-    @State private var freqcolor: Color = .orange
+    @State private var mHzFreq: UInt32 = 440000
+    @State private var freqColor: Color = .orange
     @State private var mHzAck_a: UInt32 = 0
-    private let hbtimer = Timer.publish(every: 3, on: .main, in: .common)
-    private var ipcctrl: IPCController = IPCController()
+    private let hbTimer = Timer.publish(every: 3, on: .main, in: .common)
+    private var ipcCtrl: IPCController = IPCController()
 
     init() {
-        _ = hbtimer.connect()
+        _ = hbTimer.connect()
     }
     
-    func toString(_ freq: Double) -> String {
-        if freq < 1000 { return String(format: "%.1f", freq) }
-        else { return String(format: "%.2fK", freq/1000) }
+    func toString(_ mHz: UInt32) -> String {
+        let freq = toHz(mHz)
+        if freq < 10.0 { return String(format: "%.2f", freq) }
+        else if freq < 1000.0 { return String(format: "%.1f", freq) }
+        else { return String(format: "%.2fK", tokHz(freq)) }
+    }
+        
+    func toHz(_ mHz: UInt32) -> Double {
+        return Double(mHz) * 1e-3
     }
     
-    func mHz(_ hz: Double) -> UInt32 {
-        return UInt32(hz * 1e3)
+    func tokHz(_ hz: Double) -> Double {
+        return hz * 1e-3
     }
     
     var body: some View {
         VStack {
             ZStack {
-                CircularSlider(value: $frequency, in: (lo: 0.25, hi: 740.0))
+                CircularSlider(value: $mHzFreq, in: (lo: 250, hi: 880000), expscale: true)
                     .padding([.horizontal, .vertical])
-                    .onChange(of: frequency) {
-                        ipcctrl.sendEMDriverMsg(mHz_a: mHz(frequency))
-                        freqcolor = .orange
+                    .onChange(of: mHzFreq) {     // onSliderDragging
+                        ipcCtrl.sendEMDriverMsg(mHz_a: mHzFreq)
+                        freqColor = .orange
                     }
-                    .onChange(of: mHzAck_a) {
-                        if mHzAck_a == mHz(frequency) { freqcolor = .green }
-                        else { ipcctrl.sendEMDriverMsg(mHz_a: mHz(frequency)) }
+                    .onChange(of: mHzAck_a) {    // onHBFreqRsps
+                        if mHzAck_a == mHzFreq { freqColor = .green }
+                        else { ipcCtrl.sendEMDriverMsg(mHz_a: mHzFreq) }
                     }
-                    .onReceive(hbtimer) { _ in
-                        ipcctrl.sendEMDriverMsg(ACK: true)
+                    .onReceive(hbTimer) { _ in   // onHB
+                        ipcCtrl.sendEMDriverMsg(ACK: true)
                     }
                 
-                Text(toString(frequency))
+                Text(toString(mHzFreq))
                     .font(Font.custom("CourierNewPSMT", size: 64))
-                    .foregroundColor(freqcolor)
+                    .foregroundColor(freqColor)
             }
             
             Divider()
@@ -56,14 +62,14 @@ struct ContentView: View {
             Rectangle()
                 .fill(.black)
             
-            Text(ipcctrl.description)
+            Text(ipcCtrl.description)
                 .font(Font.custom("CourierNewPSMT", size: 20))
-                .foregroundColor(ipcctrl.status ? .green : .red)
+                .foregroundColor(ipcCtrl.status ? .green : .red)
         }
         .preferredColorScheme(.dark)
         .task {
-            ipcctrl.start(feedback_a: $mHzAck_a)
-            ipcctrl.receiveEMDriverMsg()
+            ipcCtrl.start(feedback_a: $mHzAck_a)
+            ipcCtrl.receiveEMDriverMsg()
         }
     }
 }

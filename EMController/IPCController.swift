@@ -63,7 +63,7 @@ class IPCController : CustomStringConvertible {
         connection?.receiveMessage(completion: { content, _, _, error in
             if let data = content, !data.isEmpty {
                 let rsp = EMDriverMsg(data)
-                NSLog("EMDriverMsg: %@", rsp.description)
+                NSLog("Received EMDriverMsg: %@", rsp.description)
                 self.mHzAck_a?.wrappedValue = rsp.datapacket.freq_a
             }
             if let error = error {
@@ -77,10 +77,13 @@ class IPCController : CustomStringConvertible {
     }
     
     func sendEMDriverMsg(mHz_a freq_a: UInt32 = 0, ACK ackbit: Bool = false) {
-        self.connection?.send(
-            content: EMDriverMsg(mHz_a: freq_a, ACK: ackbit).toData(),
+        let req = EMDriverMsg(mHz_a: freq_a, ACK: ackbit)
+        self.connection?.send(content: req.toData(),
             completion: NWConnection.SendCompletion.contentProcessed( { error in
-                if (error != nil) {
+                if (error == nil) {
+                    if req.datapacket.freq_a == 0 { return }
+                    NSLog("Sent EMDriverMsg: %@", req.description)
+                } else {
                     NSLog("IPCController::sendEMDriverMsg error: %@", "\(error!)")
                     self.cancel()
                 }

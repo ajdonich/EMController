@@ -10,6 +10,7 @@ import SwiftUI
 let R90 = 0.5 * CGFloat.pi
 let R270 = 1.5 * CGFloat.pi
 let TAU = 2.0 * CGFloat.pi
+let TAUEXP = TAU / (exp(TAU) - 1.0)
 
 extension CGPoint {
     static func +(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
@@ -31,11 +32,11 @@ struct DragArc: Shape {
     // Hides angle (measured from 12 o'oclock) of circular arc.
     // Note: addArc counterintuitive due to LH system rotated R90
     func path(in rect: CGRect) -> Path {
-        var path = Path()
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radius = min(rect.width, rect.height) * 0.5
         let rayhandle = center + CGPoint(x: 0.0, y: -radius)
         
+        var path = Path()
         path.move(to: center)
         path.addLine(to: rayhandle)
         path.addArc(
@@ -51,13 +52,22 @@ struct DragArc: Shape {
 
 struct CircularSlider: View {
     @State private var angle: Double
-    private var value: Binding<Double>
-    private var range: (lo: Double, hi: Double)
+    private var value: Binding<UInt32>
+    private var range: (lo: UInt32, hi: UInt32)
+    private var scalefcn: (Double) -> Double
     
-    init(value: Binding<Double>, in range: (lo: Double, hi: Double)) {
-        self.angle = (value.wrappedValue - range.lo) * TAU / (range.hi - range.lo)
+    init(value: Binding<UInt32>, in range: (lo: UInt32, hi: UInt32), expscale: Bool=false) {
+        let ratio = Double(value.wrappedValue - range.lo) / Double(range.hi - range.lo)
         self.value = value
         self.range = range
+        
+        if expscale {
+            self.angle = log(ratio * TAU / TAUEXP + 1.0)
+            self.scalefcn = { (exp($0) - 1.0) * TAUEXP }
+        } else {
+            self.angle = ratio * TAU
+            self.scalefcn = {$0}
+        }
     }
     
     private enum Quadrant { case Q1, Q2, Q3, Q4 }
@@ -112,7 +122,7 @@ struct CircularSlider: View {
                             }
                             
                             // Assign slider bound value (e.g. frequency) based on angle and range
-                            value.wrappedValue = (angle * (range.hi - range.lo) / TAU) + range.lo
+                            value.wrappedValue =  UInt32((scalefcn(angle) * Double(range.hi - range.lo) / TAU)) + range.lo
                         })
                     )
             }

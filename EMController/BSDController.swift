@@ -8,7 +8,7 @@
 import Foundation
 
 // This class performs the same UDP IPC exchange with the ESP32 as
-// IPCController does, but using the lower level network system call
+// IPCController does, but using the POSIX level network system calls
 
 class BSDController : CustomStringConvertible {
     private let ESP_HOST: String = "192.168.0.16"

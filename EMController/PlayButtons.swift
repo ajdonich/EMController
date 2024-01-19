@@ -17,11 +17,11 @@ struct PlayButtons: View {
         buttonColors = colors
         buttonPushCb = pushCb
     }
-        
+    
     var body: some View {
         HStack {
             Button(action: { buttonPushCb(ButtonType.BWD) }) {
-                Image(systemName: "backward.circle")
+                Image(systemName: "arrowshape.down.circle")
                     .foregroundColor(buttonColors.bwd)
                     .font(.system(size: 64))
             }
@@ -34,7 +34,7 @@ struct PlayButtons: View {
             .padding(.horizontal)
             
             Button(action: { buttonPushCb(ButtonType.FWD) }) {
-                Image(systemName: "forward.circle")
+                Image(systemName: "arrowshape.up.circle")
                     .foregroundColor(buttonColors.fwd)
                     .font(.system(size: 64))
             }

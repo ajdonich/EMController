@@ -10,14 +10,13 @@ import Network
 import SwiftUI
 
 
-class IPCController : CustomStringConvertible {
-    private var mHzAck_a: Binding<UInt32>? = nil
+let ESP_HOST: NWEndpoint.Host = "192.168.0.16"
+let ESP_PORT: NWEndpoint.Port = 4645
 
-    var ESP_HOST: NWEndpoint.Host = "192.168.0.16"
-    var UDP_PORT: NWEndpoint.Port = 4645
+
+class IPCController : CustomStringConvertible {
     var status: Bool = false
-    
-    private static var fCount: UInt32 = 1
+    private var mHzAck_a: Binding<UInt32>? = nil
     private var connection: NWConnection? = nil
     
     var description: String {
@@ -26,19 +25,29 @@ class IPCController : CustomStringConvertible {
         return "\(parts[0])://\(connection!.endpoint.debugDescription)"
     }
     
-    func start(feedback_a: Binding<UInt32>) {
-        NSLog("IPCController::start")
-        connection = NWConnection(host: ESP_HOST, port: UDP_PORT, using: .udp)
-        connection?.stateUpdateHandler = self.stateHandler(state:)
-        connection?.start(queue: .global())
-        mHzAck_a = feedback_a
+    func bindAckRsp(to value: Binding<UInt32>) {
+        mHzAck_a = value
     }
     
-    func cancel() {
+    private func start() {
+        NSLog("IPCController::start")
+        connection = NWConnection(host: ESP_HOST, port: ESP_PORT, using: .udp)
+        connection?.stateUpdateHandler = stateHandler(state:)
+        connection?.start(queue: .global())
+    }
+    
+    private func cancel() {
         NSLog("IPCController::cancel")
         connection?.cancel()
         connection = nil
         status = false
+    }
+    
+    private func validate() {
+        if connection == nil {
+            start()
+            receiveEMDriverMsg()
+        }
     }
     
     private func stateHandler(state: NWConnection.State) {
@@ -77,8 +86,9 @@ class IPCController : CustomStringConvertible {
     }
     
     func sendEMDriverMsg(mHz_a freq_a: UInt32 = 0, ACK ackbit: Bool = false) {
+        validate()
         let req = EMDriverMsg(mHz_a: freq_a, ACK: ackbit)
-        self.connection?.send(content: req.toData(),
+        connection?.send(content: req.toData(),
             completion: NWConnection.SendCompletion.contentProcessed( { error in
                 if (error == nil) {
                     if req.datapacket.freq_a == 0 { return }

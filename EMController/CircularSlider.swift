@@ -61,16 +61,20 @@ struct CircularSlider: View {
     private var value: Binding<UInt32>
     private var range: (lo: UInt32, hi: UInt32)
     private var scalefcn: (Double) -> Double
-    private var valtext: String
-    private var valcolor: Color
-
-    init(value: Binding<UInt32>, in range: (lo: UInt32, hi: UInt32), text: String, color: Color, expscale: Bool=false) {
+    private var valuetext: String
+    private var textcolor: Color
+    private var expscale: Bool
+    private var enabled: Bool
+    
+    init(value: Binding<UInt32>, in range: (lo: UInt32, hi: UInt32), text: String, color: Color, enabled: Bool, expscale: Bool=false) {
         let ratio = Double(value.wrappedValue - range.lo) / Double(range.hi - range.lo)
         self.value = value
         self.range = range
-        self.valtext = text
-        self.valcolor = color
-
+        self.valuetext = text
+        self.textcolor = color
+        self.enabled = enabled
+        self.expscale = expscale
+        
         if expscale {
             self.angle = log(ratio * TAU / TAUEXP + 1.0)
             self.scalefcn = { (exp($0) - 1.0) * TAUEXP }
@@ -80,9 +84,8 @@ struct CircularSlider: View {
         }
         
         dtheta = 0.0
-        buttonColors = (bwd: .blue, stp: .blue, fwd: .blue)
+        buttonColors = (bwd: .gray, stp: .gray, fwd: .gray)
         sweepTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
-        sweepTimer.upstream.connect().cancel()
     }
     
     private enum Quadrant { case Q1, Q2, Q3, Q4 }
@@ -104,22 +107,41 @@ struct CircularSlider: View {
     
     private func buttonPushed(_ btype: ButtonType) {
         sweepTimer.upstream.connect().cancel()
-        if btype == ButtonType.BWD { dtheta -= RAD_PER_DEG * 0.1 }
+        
+        if !enabled { return }
+        else if btype == ButtonType.BWD { dtheta -= RAD_PER_DEG * 0.1 }
         else if btype == ButtonType.FWD { dtheta += RAD_PER_DEG * 0.1 }
         else { dtheta = 0.0 }
         
-        if abs(dtheta) < 0.001 {
-            dtheta = 0.0
+        if abs(dtheta) < 0.000001 {
+            UIApplication.shared.isIdleTimerDisabled = false
             buttonColors = (bwd: .blue, stp: .blue, fwd: .blue)
+            dtheta = 0.0
         }
-        else if dtheta < 0 {
-            buttonColors = (bwd: .orange, stp: .blue, fwd: .blue)
+        else {
+            UIApplication.shared.isIdleTimerDisabled = true
             sweepTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+            buttonColors = dtheta < 0
+                ? (bwd: .orange, stp: .blue, fwd: .blue)
+                : (bwd: .blue, stp: .blue, fwd: .orange)
         }
-        else{
-            buttonColors = (bwd: .blue, stp: .blue, fwd: .orange)
-            sweepTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    }
+    
+    // Update angle state, prevent update across Q1 <-> Q4
+    private func updateAngle(to theta: CGFloat) -> Bool {
+        var nxtangle = theta.truncatingRemainder(dividingBy: TAU)
+        if theta < 0.0 { nxtangle += TAU }
+        
+        var status = false
+        switch (getQuad(at: angle), getQuad(at: nxtangle)) {
+        case (Quadrant.Q1, Quadrant.Q4): angle = 0.0
+        case (Quadrant.Q4, Quadrant.Q1): angle = TAU
+        default: angle = nxtangle; status = true
         }
+        
+        // Assign slider bound value (e.g. frequency) based on angle and range
+        value.wrappedValue =  UInt32((scalefcn(angle) * Double(range.hi - range.lo) / TAU)) + range.lo
+        return status
     }
     
     var body: some View {
@@ -145,42 +167,34 @@ struct CircularSlider: View {
                         .offset(hoffset(radius))
                         .gesture(DragGesture()
                             .onChanged({drag in
-                                buttonPushed(ButtonType.STOP)
+                                if !enabled { return }
+                                buttonPushed(ButtonType.STOP) // Drag stops any auto sweep
                                 
                                 // Get angle to touch location in local coords
                                 let vtouch = drag.location - CGPoint(x: rect.midX, y: rect.midY)
-                                var drangle = atan2(vtouch.y, vtouch.x) + R90
-                                if drangle < 0  { drangle += TAU }
-                                
-                                // Update angle state, prevent drag across Q1 <-> Q4
-                                switch (getQuad(at: angle), getQuad(at: drangle)) {
-                                case (Quadrant.Q1, Quadrant.Q4): angle = 0.0
-                                case (Quadrant.Q4, Quadrant.Q1): angle = TAU
-                                default: angle = drangle
-                                }
-                                
-                                // Assign slider bound value (e.g. frequency) based on angle and range
-                                value.wrappedValue =  UInt32((scalefcn(angle) * Double(range.hi - range.lo) / TAU)) + range.lo
+                                let drangle = atan2(vtouch.y, vtouch.x) + R90
+                                _ = updateAngle(to: drangle)
                             })
                         )
                     
-                    Text(valtext)
+                    Text(valuetext)
                         .font(Font.custom("CourierNewPSMT", size: 64))
-                        .foregroundColor(valcolor)
+                        .foregroundColor(textcolor)
                 }
             })
             
             PlayButtons(colors: buttonColors, pushCb: buttonPushed)
                 .padding(.top)
                 .onReceive(sweepTimer) { _ in
-                    switch (getQuad(at: angle), getQuad(at: angle + dtheta)) {
-                    case (Quadrant.Q1, Quadrant.Q4): angle = 0.0;
-                    case (Quadrant.Q4, Quadrant.Q1): angle = TAU; 
-                    default: angle += dtheta
+                    if abs(dtheta) < 0.000001 || !updateAngle(to: angle+dtheta) {
+                        buttonPushed(ButtonType.STOP)
                     }
-                    
-                    // Assign slider bound value (e.g. frequency) based on angle and range
-                    value.wrappedValue =  UInt32((scalefcn(angle) * Double(range.hi - range.lo) / TAU)) + range.lo
+                }
+                .onChange(of: enabled) {
+                    buttonColors = (bwd: .blue, stp: .blue, fwd: .blue)
+                    let ratio = Double(value.wrappedValue - range.lo) / Double(range.hi - range.lo)
+                    if expscale { angle = log(ratio * TAU / TAUEXP + 1.0)
+                    } else { angle = ratio * TAU }
                 }
         }
     }

@@ -12,11 +12,10 @@ struct EMDriverMsg : CustomStringConvertible {
     private static var _msgcounter: UInt32 = 0
     let datapacket: DataPacket
 
-    init(mHz_a freq_a: UInt32 = 0, mHz_b freq_b: UInt32 = 0,
-         mHz_c freq_c: UInt32 = 0, ACK ackbit: Bool = false) {
+    init(mHz freqs: [Int32], ACK ackbit: Bool) {
         let msgid = UInt16(EMDriverMsg._msgcounter + 1)
         EMDriverMsg._msgcounter = (EMDriverMsg._msgcounter + 1) % 65535
-        datapacket = DataPacket(ackbit, msgid, freq_a, freq_b, freq_c)
+        datapacket = DataPacket(ackbit, msgid, freqs[0], freqs[1], freqs[2])
     }
 
     init(_ data: Data) {
@@ -38,10 +37,10 @@ struct EMDriverMsg : CustomStringConvertible {
     struct DataPacket {
         let ackbit: Bool
         let msgid: UInt16
-        let freq_a, freq_b, freq_c: UInt32 // Millihertz
+        let freq_a, freq_b, freq_c: Int32 // Millihertz
 
-        init(_ ackbit: Bool, _ msgid: UInt16 = 0, _ freq_a: UInt32,
-             _ freq_b: UInt32, _ freq_c: UInt32) {
+        init(_ ackbit: Bool, _ msgid: UInt16 = 0, _ freq_a: Int32,
+             _ freq_b: Int32, _ freq_c: Int32) {
             self.ackbit = ackbit; self.msgid = msgid
             self.freq_a = freq_a; self.freq_b = freq_b
             self.freq_c = freq_c;

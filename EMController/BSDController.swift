@@ -27,8 +27,8 @@ class BSDController : CustomStringConvertible {
         return "udp://\(ESP_HOST):\(UDP_PORT)"        
     }
     
-    func sendEMDriverMsg(mHz_a freq_a: UInt32 = 0, ACK ackbit: Bool = false) {
-        let msg = EMDriverMsg(mHz_a: freq_a, ACK: ackbit)
+    func sendEMDriverMsg(mHz freqs: [Int32] = [-1,-1,-1], ACK ackbit: Bool = false) {
+        let msg = EMDriverMsg(mHz: freqs, ACK: ackbit)
         let msglen = MemoryLayout<EMDriverMsg.DataPacket>.size
         let nbytes = withUnsafePointer(to: msg.datapacket) { pdata in
             withUnsafePointer(to: &espaddr) { (espaddr_p1: UnsafePointer<sockaddr_in>) in

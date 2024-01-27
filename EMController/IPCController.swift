@@ -16,17 +16,17 @@ let ESP_PORT: NWEndpoint.Port = 4645
 
 class IPCController : CustomStringConvertible {
     var status: Bool = false
-    private var mHzAck_a: Binding<UInt32>? = nil
+    private var mHzAcks_a: Binding<[Int32]>? = nil
     private var connection: NWConnection? = nil
     
     var description: String {
-        if connection == nil { return "ERROR" }
-        let parts =  connection!.parameters.debugDescription.split(separator: ",")
-        return "\(parts[0])://\(connection!.endpoint.debugDescription)"
+        let descr = connection?.endpoint.debugDescription
+        let parts = connection?.parameters.debugDescription.split(separator: ",")
+        return (descr != nil && parts != nil) ? "\(parts![0])://\(descr!)" : "ERROR"
     }
     
-    func bindAckRsp(to value: Binding<UInt32>) {
-        mHzAck_a = value
+    func bindAckRsp(to value: Binding<[Int32]>) {
+        mHzAcks_a = value
     }
     
     private func start() {
@@ -73,7 +73,9 @@ class IPCController : CustomStringConvertible {
             if let data = content, !data.isEmpty {
                 let rsp = EMDriverMsg(data)
                 NSLog("Received EMDriverMsg: %@", rsp.description)
-                self.mHzAck_a?.wrappedValue = rsp.datapacket.freq_a
+                self.mHzAcks_a?.wrappedValue[0] = rsp.datapacket.freq_a
+                self.mHzAcks_a?.wrappedValue[1] = rsp.datapacket.freq_b
+                self.mHzAcks_a?.wrappedValue[2] = rsp.datapacket.freq_c
             }
             if let error = error {
                 NSLog("IPCController::receiveEMDriverMsg error: %@", "\(error)")
@@ -85,13 +87,13 @@ class IPCController : CustomStringConvertible {
         })
     }
     
-    func sendEMDriverMsg(mHz_a freq_a: UInt32 = 0, ACK ackbit: Bool = false) {
+    func sendEMDriverMsg(mHz freqs: [Int32] = [-1,-1,-1], ACK ackbit: Bool = false) {
         validate()
-        let req = EMDriverMsg(mHz_a: freq_a, ACK: ackbit)
+        let req = EMDriverMsg(mHz: freqs, ACK: ackbit)
         connection?.send(content: req.toData(),
             completion: NWConnection.SendCompletion.contentProcessed( { error in
                 if (error == nil) {
-                    if req.datapacket.freq_a == 0 { return }
+                    if req.datapacket.freq_a == -1 { return }
                     NSLog("Sent EMDriverMsg: %@", req.description)
                 } else {
                     NSLog("IPCController::sendEMDriverMsg error: %@", "\(error!)")

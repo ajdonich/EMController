@@ -58,15 +58,15 @@ struct CircularSlider: View {
     @State private var buttonColors: (bwd: Color, stp: Color, fwd: Color)
     @State private var sweepTimer: Publishers.Autoconnect<Timer.TimerPublisher>
     
-    private var value: Binding<UInt32>
-    private var range: (lo: UInt32, hi: UInt32)
+    private var value: Binding<Int32>
+    private var range: (lo: Int32, hi: Int32)
     private var scalefcn: (Double) -> Double
     private var valuetext: String
     private var textcolor: Color
     private var expscale: Bool
     private var enabled: Bool
     
-    init(value: Binding<UInt32>, in range: (lo: UInt32, hi: UInt32), text: String, color: Color, enabled: Bool, expscale: Bool=false) {
+    init(value: Binding<Int32>, in range: (lo: Int32, hi: Int32), text: String, color: Color, enabled: Bool, expscale: Bool=false) {
         let ratio = Double(value.wrappedValue - range.lo) / Double(range.hi - range.lo)
         self.value = value
         self.range = range
@@ -84,7 +84,9 @@ struct CircularSlider: View {
         }
         
         dtheta = 0.0
-        buttonColors = (bwd: .gray, stp: .gray, fwd: .gray)
+        buttonColors = enabled
+            ? (bwd: .blue, stp: .blue, fwd: .blue)
+            : (bwd: .gray, stp: .gray, fwd: .gray)
         sweepTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
     }
     
@@ -140,7 +142,7 @@ struct CircularSlider: View {
         }
         
         // Assign slider bound value (e.g. frequency) based on angle and range
-        value.wrappedValue =  UInt32((scalefcn(angle) * Double(range.hi - range.lo) / TAU)) + range.lo
+        value.wrappedValue =  Int32((scalefcn(angle) * Double(range.hi - range.lo) / TAU)) + range.lo
         return status
     }
     
@@ -151,31 +153,33 @@ struct CircularSlider: View {
                 let radius = min(rect.width, rect.height) * 0.5
                 
                 ZStack {
-                    Circle()              // Revealed BG color on drag
-                        .fill(.blue)
-                    
-                    DragArc(angle: angle) // Removed FG color on drag
-                        .fill(.gray)
-                    
-                    Circle()              // Solid inner/center FG color
-                        .scale(0.9)
-                        .fill(.black)
-                    
-                    Circle()              // Draggable slider handle
-                        .scale(0.15)
-                        .fill(.white.opacity(0.9))
-                        .offset(hoffset(radius))
-                        .gesture(DragGesture()
-                            .onChanged({drag in
-                                if !enabled { return }
-                                buttonPushed(ButtonType.STOP) // Drag stops any auto sweep
-                                
-                                // Get angle to touch location in local coords
-                                let vtouch = drag.location - CGPoint(x: rect.midX, y: rect.midY)
-                                let drangle = atan2(vtouch.y, vtouch.x) + R90
-                                _ = updateAngle(to: drangle)
-                            })
-                        )
+                    if enabled {
+                        Circle()              // Revealed BG color on drag
+                            .fill(.blue)
+                        
+                        DragArc(angle: angle) // Removed FG color on drag
+                            .fill(.gray)
+                        
+                        Circle()              // Solid inner/center FG color
+                            .scale(0.9)
+                            .fill(.black)
+                        
+                        Circle()              // Draggable slider handle
+                            .scale(0.15)
+                            .fill(.white.opacity(0.9))
+                            .offset(hoffset(radius))
+                            .gesture(DragGesture()
+                                .onChanged({drag in
+                                    if !enabled { return }
+                                    buttonPushed(ButtonType.STOP) // Drag stops any auto sweep
+                                    
+                                    // Get angle to touch location in local coords
+                                    let vtouch = drag.location - CGPoint(x: rect.midX, y: rect.midY)
+                                    let drangle = atan2(vtouch.y, vtouch.x) + R90
+                                    _ = updateAngle(to: drangle)
+                                })
+                            )
+                    }
                     
                     Text(valuetext)
                         .font(Font.custom("CourierNewPSMT", size: 64))
@@ -183,19 +187,21 @@ struct CircularSlider: View {
                 }
             })
             
-            PlayButtons(colors: buttonColors, pushCb: buttonPushed)
-                .padding(.top)
-                .onReceive(sweepTimer) { _ in
-                    if abs(dtheta) < 0.000001 || !updateAngle(to: angle+dtheta) {
-                        buttonPushed(ButtonType.STOP)
+            if enabled {
+                PlayButtons(colors: buttonColors, pushCb: buttonPushed)
+                    .padding(.top)
+                    .onReceive(sweepTimer) { _ in
+                        if abs(dtheta) < 0.000001 || !updateAngle(to: angle+dtheta) {
+                            buttonPushed(ButtonType.STOP)
+                        }
                     }
-                }
-                .onChange(of: enabled) {
-                    buttonColors = (bwd: .blue, stp: .blue, fwd: .blue)
-                    let ratio = Double(value.wrappedValue - range.lo) / Double(range.hi - range.lo)
-                    if expscale { angle = log(ratio * TAU / TAUEXP + 1.0)
-                    } else { angle = ratio * TAU }
-                }
+                    .onChange(of: enabled) {
+                        buttonColors = (bwd: .blue, stp: .blue, fwd: .blue)
+                        let ratio = Double(value.wrappedValue - range.lo) / Double(range.hi - range.lo)
+                        if expscale { angle = log(ratio * TAU / TAUEXP + 1.0)
+                        } else { angle = ratio * TAU }
+                    }
+            }
         }
     }
 }

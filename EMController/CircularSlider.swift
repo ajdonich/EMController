@@ -11,8 +11,19 @@ import Combine
 let R90 = 0.5 * CGFloat.pi
 let R270 = 1.5 * CGFloat.pi
 let TAU = 2.0 * CGFloat.pi
+let TAUINV = 1.0 / TAU
 let TAUEXP = TAU / (exp(TAU) - 1.0)
 let RAD_PER_DEG = CGFloat.pi / 180.0
+let DEG_PER_RAD = 180.0 / CGFloat.pi
+
+protocol Slidable {
+    func getText(at value: Int32) -> String
+    func getAngle(at value: Int32) -> Double
+    func getValue(at angle: Double) -> Int32
+    
+    func nextValue(after value: Int32) -> Int32
+    func prevValue(before value: Int32) -> Int32
+}
 
 extension CGPoint {
     static func +(_ a: CGPoint, _ b: CGPoint) -> CGPoint {
@@ -53,41 +64,22 @@ struct DragArc: Shape {
 }
 
 struct CircularSlider: View {
-    @State private var angle: Double
-    @State private var dtheta: Double
-    @State private var buttonColors: (bwd: Color, stp: Color, fwd: Color)
-    @State private var sweepTimer: Publishers.Autoconnect<Timer.TimerPublisher>
-    
+    @State private var angle: Double = 0.0
+    @State private var buttonColors: (bwd: Color, stp: Color, fwd: Color) = (bwd: .blue, stp: .blue, fwd: .blue)
+    @State private var sweepTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    @State private var sweepTicks: Int = 0
+    @State private var nticks: Int = 0
+
     private var value: Binding<Int32>
-    private var range: (lo: Int32, hi: Int32)
-    private var scalefcn: (Double) -> Double
-    private var valuetext: String
+    private var slidable: Slidable
     private var textcolor: Color
-    private var expscale: Bool
     private var enabled: Bool
-    
-    init(value: Binding<Int32>, in range: (lo: Int32, hi: Int32), text: String, color: Color, enabled: Bool, expscale: Bool=false) {
-        let ratio = Double(value.wrappedValue - range.lo) / Double(range.hi - range.lo)
+
+    init(value: Binding<Int32>, in slidable: Slidable, color: Color, enabled: Bool) {
         self.value = value
-        self.range = range
-        self.valuetext = text
+        self.slidable = slidable
         self.textcolor = color
         self.enabled = enabled
-        self.expscale = expscale
-        
-        if expscale {
-            self.angle = log(ratio * TAU / TAUEXP + 1.0)
-            self.scalefcn = { (exp($0) - 1.0) * TAUEXP }
-        } else {
-            self.angle = ratio * TAU
-            self.scalefcn = {$0}
-        }
-        
-        dtheta = 0.0
-        buttonColors = enabled
-            ? (bwd: .blue, stp: .blue, fwd: .blue)
-            : (bwd: .gray, stp: .gray, fwd: .gray)
-        sweepTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
     }
     
     private enum Quadrant { case Q1, Q2, Q3, Q4 }
@@ -111,39 +103,36 @@ struct CircularSlider: View {
         sweepTimer.upstream.connect().cancel()
         
         if !enabled { return }
-        else if btype == ButtonType.BWD { dtheta -= RAD_PER_DEG * 0.1 }
-        else if btype == ButtonType.FWD { dtheta += RAD_PER_DEG * 0.1 }
-        else { dtheta = 0.0 }
-        
-        if abs(dtheta) < 0.000001 {
+        else if btype == ButtonType.FWD { sweepTicks += 1 }
+        else if btype == ButtonType.BWD { sweepTicks -= 1 }
+        else { sweepTicks = 0 }
+                
+        if sweepTicks == 0 {
             UIApplication.shared.isIdleTimerDisabled = false
             buttonColors = (bwd: .blue, stp: .blue, fwd: .blue)
-            dtheta = 0.0
         }
         else {
             UIApplication.shared.isIdleTimerDisabled = true
             sweepTimer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
-            buttonColors = dtheta < 0
+            buttonColors = sweepTicks < 0 
                 ? (bwd: .orange, stp: .blue, fwd: .blue)
                 : (bwd: .blue, stp: .blue, fwd: .orange)
         }
     }
     
     // Update angle state, prevent update across Q1 <-> Q4
-    private func updateAngle(to theta: CGFloat) -> Bool {
+    private func updateAngle(to theta: CGFloat) {
         var nxtangle = theta.truncatingRemainder(dividingBy: TAU)
         if theta < 0.0 { nxtangle += TAU }
         
-        var status = false
         switch (getQuad(at: angle), getQuad(at: nxtangle)) {
         case (Quadrant.Q1, Quadrant.Q4): angle = 0.0
         case (Quadrant.Q4, Quadrant.Q1): angle = TAU
-        default: angle = nxtangle; status = true
+        default: angle = nxtangle
         }
-        
+                
         // Assign slider bound value (e.g. frequency) based on angle and range
-        value.wrappedValue =  Int32((scalefcn(angle) * Double(range.hi - range.lo) / TAU)) + range.lo
-        return status
+        value.wrappedValue = slidable.getValue(at: angle)
     }
     
     var body: some View {
@@ -176,30 +165,37 @@ struct CircularSlider: View {
                                     // Get angle to touch location in local coords
                                     let vtouch = drag.location - CGPoint(x: rect.midX, y: rect.midY)
                                     let drangle = atan2(vtouch.y, vtouch.x) + R90
-                                    _ = updateAngle(to: drangle)
+                                    updateAngle(to: drangle)
                                 })
                             )
                     }
                     
-                    Text(valuetext)
+                    Text(slidable.getText(at: value.wrappedValue))
                         .font(Font.custom("CourierNewPSMT", size: 64))
                         .foregroundColor(textcolor)
                 }
             })
-            
+            .onChange(of: value.wrappedValue) {
+                updateAngle(to: slidable.getAngle(at: value.wrappedValue))
+            }
+
             if enabled {
                 PlayButtons(colors: buttonColors, pushCb: buttonPushed)
                     .padding(.top)
                     .onReceive(sweepTimer) { _ in
-                        if abs(dtheta) < 0.000001 || !updateAngle(to: angle+dtheta) {
-                            buttonPushed(ButtonType.STOP)
+                        if sweepTicks != 0 {
+                            nticks += 1
+                            if Double(nticks) * 0.1 > 1.0 / Double(abs(sweepTicks)) {
+                                let vcurr = value.wrappedValue
+                                value.wrappedValue = sweepTicks > 0
+                                    ? slidable.nextValue(after: value.wrappedValue)
+                                    : slidable.prevValue(before: value.wrappedValue)
+                                
+                                if vcurr == value.wrappedValue { buttonPushed(ButtonType.STOP) }
+                                nticks = 0
+                            }
                         }
-                    }
-                    .onChange(of: enabled) {
-                        buttonColors = (bwd: .blue, stp: .blue, fwd: .blue)
-                        let ratio = Double(value.wrappedValue - range.lo) / Double(range.hi - range.lo)
-                        if expscale { angle = log(ratio * TAU / TAUEXP + 1.0)
-                        } else { angle = ratio * TAU }
+                        else { buttonPushed(ButtonType.STOP) }
                     }
             }
         }

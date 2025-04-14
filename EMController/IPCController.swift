@@ -10,7 +10,10 @@ import Network
 import SwiftUI
 
 
-let ESP_HOST: NWEndpoint.Host = "192.168.0.16"
+//let ESP_HOST: NWEndpoint.Host = "10.0.0.211"
+//let ESP_HOST: NWEndpoint.Host = "192.168.4.29"
+//let ESP_HOST: NWEndpoint.Host = "192.168.4.23"
+let ESP_HOST: NWEndpoint.Host = "192.168.4.31"
 let ESP_PORT: NWEndpoint.Port = 4645
 
 

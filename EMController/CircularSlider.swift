@@ -168,11 +168,16 @@ struct CircularSlider: View {
                                     updateAngle(to: drangle)
                                 })
                             )
+                        
+                        Text(slidable.getText(at: value.wrappedValue))
+                            .font(Font.custom("CourierNewPSMT", size: 64))
+                            .foregroundColor(textcolor)
+                        
+                    } else {
+                        Text(slidable.getText(at: value.wrappedValue) + "Hz")
+                            .font(Font.custom("CourierNewPSMT", size: 64))
+                            .foregroundColor(textcolor)
                     }
-                    
-                    Text(slidable.getText(at: value.wrappedValue))
-                        .font(Font.custom("CourierNewPSMT", size: 64))
-                        .foregroundColor(textcolor)
                 }
             })
             .onChange(of: value.wrappedValue) {
